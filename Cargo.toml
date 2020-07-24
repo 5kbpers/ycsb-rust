@@ -5,15 +5,13 @@ authors = ["5kbpers <tangminghua@pingcap.com>"]
 edition = "2018"
 license = "Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [[bin]]
 name = "ycsb"
 
 [dependencies]
 anyhow = "1.0"
 clap = "2.33"
+dashmap = { features = ["raw-api"], version = "3.11" }
 rand = "0.7"
 thiserror = "1.0"
 zipf = "6.1"
-dashmap = { features = ["raw-api"], version = "3.11" }
