@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
 
     let rt = runtime::Builder::new()
         .threaded_scheduler()
-        .core_threads(threads)
+        .core_threads(threads + 1)
         .build()?;
 
     let config = File::open(&opt.config).expect("cannot open config file");
