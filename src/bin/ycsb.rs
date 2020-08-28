@@ -9,10 +9,7 @@ use tokio::{runtime, task};
 
 use ycsb::{
     core::{
-        client::Client,
-        measurement::{Histogram, Measurement},
-        properties::Properties,
-        workload::CoreWorkload,
+        client::Client, measurement::Histogram, properties::Properties, workload::CoreWorkload,
     },
     db::create_db,
 };
@@ -43,6 +40,11 @@ async fn main() -> Result<()> {
     let rt = runtime::Builder::new()
         .threaded_scheduler()
         .core_threads(threads + 1)
+        .max_threads(threads + 1)
+        .on_thread_start(|| {
+            println!("thread started");
+        })
+        .thread_name("ycsb-worker")
         .build()?;
 
     let config = File::open(&opt.config).expect("cannot open config file");
@@ -102,9 +104,9 @@ async fn main() -> Result<()> {
                 })
             });
             join_all(load_handles).await;
-            println!("{}", histogram.summary());
-            println!("Load data done.");
-            histogram = histogram.clone();
+            println!("{}", histogram.info());
+            println!("====== Load data done. ======");
+            histogram = Histogram::new(1024);
             (0..threads)
                 .map(|_| {
                     let workload = CoreWorkload::new(&props).expect("load workload failed");
@@ -128,14 +130,18 @@ async fn main() -> Result<()> {
     let histogram_clone = histogram.clone();
     rt.spawn(async move {
         interval.tick().await;
+        let mut prev = histogram_clone.info();
         loop {
             interval.tick().await;
-            println!("{}", histogram_clone.summary());
+            let info = histogram_clone.info();
+            let delta = info.delta(prev);
+            println!("{}", delta);
+            prev = info;
         }
     });
 
     join_all(handles).await;
-    println!("{}", histogram.summary());
+    println!("{:?}", histogram.info());
     println!("Test exited");
     rt.shutdown_background();
 
