@@ -1,48 +1,48 @@
-use std::collections::BTreeMap;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use anyhow::Result;
+use crossbeam_skiplist::map::SkipMap;
 
 use crate::core::db::{Db, KvPair};
 
-pub struct BTreeDb {
-    inner: Arc<RwLock<BTreeMap<String, Vec<KvPair>>>>,
+pub struct SkiplistDb {
+    // HashMap<table_name, SkipMap<key, fields>>
+    inner: Arc<SkipMap<String, Vec<KvPair>>>,
 }
 
-impl BTreeDb {
+impl SkiplistDb {
     pub fn new() -> Self {
         Self {
-            inner: Arc::new(RwLock::new(BTreeMap::default())),
+            inner: Arc::new(SkipMap::new()),
         }
     }
 }
 
-impl Db for BTreeDb {
+impl Db for SkiplistDb {
     fn init(&self) {}
 
     fn close(&self) {}
 
     fn read(&self, _: String, key: String, _: Vec<String>) -> Result<Vec<KvPair>> {
-        let db = self.inner.read().unwrap();
-        db.get(&key)
-            .cloned()
+        self.inner
+            .get(&key)
             .ok_or_else(|| anyhow!("key {} does not exist", key))
+            .map(|e| e.value().clone())
     }
 
     fn scan(&self, _: String, key: String, _: Vec<String>, count: u64) -> Result<Vec<Vec<KvPair>>> {
         use std::ops::RangeFrom;
 
-        let db = self.inner.read().unwrap();
-        Ok(db
+        Ok(self
+            .inner
             .range(RangeFrom { start: key })
             .take(count as usize)
-            .map(|(_, value)| value.clone())
+            .map(|e| e.value().clone())
             .collect())
     }
 
     fn update(&self, _: String, key: String, values: Vec<KvPair>) -> Result<()> {
-        let mut db = self.inner.write().unwrap();
-        db.insert(key, values);
+        self.inner.insert(key, values);
         Ok(())
     }
 

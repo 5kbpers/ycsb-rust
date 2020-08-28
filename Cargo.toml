@@ -20,3 +20,8 @@ structopt = "0.3"
 crossbeam = "0.7"
 tokio = { features = ["full"], version =  "0.2"}
 futures = "0.3"
+
+[dependencies.crossbeam-skiplist]
+git = "https://github.com/crossbeam-rs/crossbeam.git"
+tag = "crossbeam-0.7.3"
+package = "crossbeam-skiplist"

@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
                 rt.spawn(async move {
                     (0..record_count / threads as u64).for_each(|_| {
                         let start = Instant::now();
-                        let _ = client.do_insert();
+                        client.do_insert().unwrap();
                         histogram.measure(start.elapsed());
                     })
                 })
@@ -79,7 +79,7 @@ async fn main() -> Result<()> {
                 rt.spawn(async move {
                     (0..op_count / threads as u64).for_each(|_| {
                         let start = Instant::now();
-                        let _ = client.do_transaction();
+                        client.do_transaction().unwrap();
                         histogram.measure(start.elapsed());
                     })
                 })
