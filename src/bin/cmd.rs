@@ -3,7 +3,7 @@ use std::io::BufReader;
 use std::time::Instant;
 
 use anyhow::Result;
-use futures::future::try_join_all;
+use futures::future::join_all;
 use structopt::StructOpt;
 use tokio::{runtime, task};
 
@@ -32,6 +32,7 @@ struct Ycsb {
 enum Command {
     Load,
     Run,
+    LoadRun,
 }
 
 #[tokio::main]
@@ -49,7 +50,7 @@ async fn main() -> Result<()> {
     let props = Properties::load(config_reader).expect("load properties failed");
     let db = create_db(&opt.db).expect("create db failed");
 
-    let histogram = Histogram::new(1024);
+    let mut histogram = Histogram::new(1024);
 
     let handles: Vec<task::JoinHandle<_>> = match opt.cmd {
         Command::Load => (0..threads)
@@ -84,19 +85,59 @@ async fn main() -> Result<()> {
                 })
             })
             .collect(),
-    };
 
-    let mut tick = tokio::time::interval(std::time::Duration::from_secs(10));
-
-    tokio::select! {
-        _ = tick.tick() => {
+        Command::LoadRun => {
+            let load_handles = (0..threads).map(|_| {
+                let workload = CoreWorkload::new(&props).expect("load workload failed");
+                let client = Client::new(db.clone(), workload);
+                let props = props.clone();
+                let histogram = histogram.clone();
+                let record_count = props.get_record_count();
+                rt.spawn(async move {
+                    (0..record_count / threads as u64).for_each(|_| {
+                        let start = Instant::now();
+                        let _ = client.do_insert();
+                        histogram.measure(start.elapsed());
+                    })
+                })
+            });
+            join_all(load_handles).await;
             println!("{}", histogram.summary());
+            println!("Load data done.");
+            histogram = histogram.clone();
+            (0..threads)
+                .map(|_| {
+                    let workload = CoreWorkload::new(&props).expect("load workload failed");
+                    let client = Client::new(db.clone(), workload);
+                    let props = props.clone();
+                    let histogram = histogram.clone();
+                    let op_count = props.get_operation_count();
+                    rt.spawn(async move {
+                        (0..op_count / threads as u64).for_each(|_| {
+                            let start = Instant::now();
+                            let _ = client.do_transaction();
+                            histogram.measure(start.elapsed());
+                        })
+                    })
+                })
+                .collect()
         }
-        _ = try_join_all(handles) => {
-            println!("{}", histogram.summary());
-            println!("Test exited");
-        },
     };
+
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
+    let histogram_clone = histogram.clone();
+    rt.spawn(async move {
+        interval.tick().await;
+        loop {
+            interval.tick().await;
+            println!("{}", histogram_clone.summary());
+        }
+    });
+
+    join_all(handles).await;
+    println!("{}", histogram.summary());
+    println!("Test exited");
+    rt.shutdown_background();
 
     Ok(())
 }
