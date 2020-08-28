@@ -49,12 +49,12 @@ lazy_static! {
     .collect();
 }
 
-#[derive(Default)]
-pub struct PropsLoader {
+#[derive(Default, Clone)]
+pub struct Properties {
     inner: HashMap<String, String>,
 }
 
-impl PropsLoader {
+impl Properties {
     pub fn load<R: BufRead>(reader: R) -> Result<Self> {
         let mut props = Self::default();
         for line in reader.lines() {
@@ -106,7 +106,7 @@ impl PropsLoader {
         let request_generator: Box<dyn Generator<u64>> = match request_dist.as_str() {
             "uniform" => Box::new(UniformGenerator::new().min(0).max(record_count - 1)),
             "zipfian" => {
-                let op_count: u64 = self.get_property(OPERATION_COUNT_PROPERTY).parse()?;
+                let op_count = self.get_operation_count();
                 let insert_proportion: f64 =
                     self.get_property(INSERT_PROPORTION_PROPERTY).parse()?;
                 let new_keys = op_count as f64 * insert_proportion * 2.0;
@@ -162,5 +162,17 @@ impl PropsLoader {
             op_chooser.add_value(Operation::ReadModifyWrite, readmodifywrite_proportion);
         }
         Ok(op_chooser)
+    }
+
+    pub fn get_operation_count(&self) -> u64 {
+        self.get_property(OPERATION_COUNT_PROPERTY)
+            .parse()
+            .expect("parse operation count failed")
+    }
+
+    pub fn get_record_count(&self) -> u64 {
+        self.get_property(RECORD_COUNT_PROPERTY)
+            .parse()
+            .expect("parse record count failed")
     }
 }

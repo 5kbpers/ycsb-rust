@@ -4,7 +4,7 @@ pub use histogram::*;
 use std::time::Duration;
 
 #[derive(Debug)]
-struct MeasurementInfo {
+pub struct MeasurementInfo {
     pub elapsed: Duration,
     pub count: u64,
     pub ops: f64,
@@ -16,7 +16,7 @@ struct MeasurementInfo {
     pub per9999th: Duration,
 }
 
-trait Measurement {
+pub trait Measurement {
     fn measure(&self, latency: Duration);
     fn summary(&self) -> String;
     fn info(&self) -> MeasurementInfo;

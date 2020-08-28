@@ -1,6 +1,5 @@
 use anyhow::Result;
 use rand::{self, distributions, Rng};
-use std::io::BufRead;
 
 use super::db::KvPair;
 use super::generator::*;
@@ -82,16 +81,14 @@ impl CoreWorkload {
         self.write_all_fields
     }
 
-    pub fn new<R: BufRead>(reader: R) -> Result<Self> {
-        let props = PropsLoader::load(reader)?;
-
+    pub fn new(props: &Properties) -> Result<Self> {
         let table_name = props.get_property(TABLENAME_PROPERTY);
         let field_count: u64 = props.get_property(FIELD_COUNT_PROPERTY).parse()?;
 
         let insert_start: u64 = props.get_property(INSERT_START_PROPERTY).parse()?;
         let key_generator = CounterGenerator::new(insert_start);
 
-        let record_count = props.get_property(RECORD_COUNT_PROPERTY).parse()?;
+        let record_count = props.get_record_count();
         let insert_key_sequence = CounterGenerator::new(record_count);
 
         let op_chooser = props.get_operation_generator()?;

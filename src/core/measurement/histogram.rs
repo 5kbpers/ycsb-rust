@@ -1,17 +1,19 @@
 use dashmap::DashMap as HashMap;
 
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use super::{Measurement, MeasurementInfo};
 
-struct Histogram {
+#[derive(Clone)]
+pub struct Histogram {
     bucket_count: u64,
-    buckets: HashMap<u64, u64>,
-    sum: AtomicU64,
-    count: AtomicU64,
-    min: AtomicU64,
-    max: AtomicU64,
+    buckets: Arc<HashMap<u64, u64>>,
+    sum: Arc<AtomicU64>,
+    count: Arc<AtomicU64>,
+    min: Arc<AtomicU64>,
+    max: Arc<AtomicU64>,
     start_time: Instant,
 }
 
@@ -19,11 +21,11 @@ impl Histogram {
     pub fn new(bucket_count: u64) -> Self {
         Self {
             bucket_count,
-            buckets: HashMap::new(),
-            sum: AtomicU64::new(0),
-            count: AtomicU64::new(0),
-            min: AtomicU64::new(0),
-            max: AtomicU64::new(0),
+            buckets: Arc::new(HashMap::new()),
+            sum: Arc::new(AtomicU64::new(0)),
+            count: Arc::new(AtomicU64::new(0)),
+            min: Arc::new(AtomicU64::new(0)),
+            max: Arc::new(AtomicU64::new(0)),
             start_time: Instant::now(),
         }
     }

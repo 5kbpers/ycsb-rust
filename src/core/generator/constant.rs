@@ -8,7 +8,7 @@ impl<T> ConstantGenerator<T> {
     }
 }
 
-impl<T: Clone> Generator<T> for ConstantGenerator<T> {
+impl<T: Clone + Send + Sync> Generator<T> for ConstantGenerator<T> {
     fn next(&self) -> T {
         self.0.clone()
     }

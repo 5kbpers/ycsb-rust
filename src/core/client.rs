@@ -1,15 +1,17 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 
 use super::db::Db;
 use super::workload::{CoreWorkload, Operation};
 
-pub struct Client<T: Db> {
-    db: T,
+pub struct Client {
+    db: Arc<dyn Db>,
     workload: CoreWorkload,
 }
 
-impl<T: Db> Client<T> {
-    pub fn new(db: T, workload: CoreWorkload) -> Self {
+impl Client {
+    pub fn new(db: Arc<dyn Db>, workload: CoreWorkload) -> Self {
         Self { db, workload }
     }
 

@@ -2,7 +2,7 @@ use anyhow::Result;
 
 pub type KvPair = (String, String);
 
-pub trait Db {
+pub trait Db: Send + Sync {
     ///
     /// Initializes any state for accessing this DB.
     /// Called once per DB client (thread); there is a single DB instance globally.

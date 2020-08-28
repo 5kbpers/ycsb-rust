@@ -10,7 +10,7 @@ pub use discrete::*;
 pub use uniform::*;
 pub use zipfian::*;
 
-pub trait Generator<T> {
+pub trait Generator<T>: Send + Sync {
     fn next(&self) -> T;
     fn last(&self) -> T;
 }
