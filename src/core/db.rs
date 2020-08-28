@@ -2,17 +2,17 @@ use anyhow::Result;
 
 pub type KvPair = (String, String);
 
-pub trait DB {
+pub trait Db {
     ///
     /// Initializes any state for accessing this DB.
     /// Called once per DB client (thread); there is a single DB instance globally.
     ///
-    fn init();
+    fn init(&self);
     ///
     /// Clears any state for accessing this DB.
     /// Called once per DB client (thread); there is a single DB instance globally.
     ///
-    fn close();
+    fn close(&self);
     ///
     /// Reads a record from the database.
     /// Field/value pairs from the result are stored in a vector.
@@ -22,7 +22,7 @@ pub trait DB {
     /// @param fields The list of fields to read, or be empty for all of them.
     /// @return Ok(KV) on success, or an Err on error/record-miss.
     ///
-    fn read(&self, table: String, key: String, fields: Vec<String>) -> Result<KvPair>;
+    fn read(&self, table: String, key: String, fields: Vec<String>) -> Result<Vec<KvPair>>;
     ///
     /// Performs a range scan for a set of records in the database.
     /// Field/value pairs from the result are stored in a vector.
@@ -39,7 +39,7 @@ pub trait DB {
         key: String,
         fields: Vec<String>,
         count: u64,
-    ) -> Result<Vec<KvPair>>;
+    ) -> Result<Vec<Vec<KvPair>>>;
     ///
     /// Updates a record in the database.
     /// Field/value pairs in the specified vector are written to the record,
@@ -61,12 +61,4 @@ pub trait DB {
     /// @return Ok() on success, or an Err on error/record-miss.
     ///
     fn insert(&self, table: String, key: String, values: Vec<KvPair>) -> Result<()>;
-    ///
-    /// Deletes a record from the database.
-    ///
-    /// @param table The name of the table.
-    /// @param key The key of the record to delete.
-    /// @return Ok() on success, or an Err on error/record-miss.
-    ///
-    fn delete(table: &str, key: &str) -> Result<()>;
 }

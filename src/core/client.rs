@@ -1,14 +1,14 @@
 use anyhow::Result;
 
-use super::db::DB;
+use super::db::Db;
 use super::workload::{CoreWorkload, Operation};
 
-pub struct Client<T: DB> {
+pub struct Client<T: Db> {
     db: T,
     workload: CoreWorkload,
 }
 
-impl<T: DB> Client<T> {
+impl<T: Db> Client<T> {
     pub fn new(db: T, workload: CoreWorkload) -> Self {
         Self { db, workload }
     }
