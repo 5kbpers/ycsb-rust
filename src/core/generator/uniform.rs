@@ -31,7 +31,7 @@ impl UniformGenerator {
     }
 }
 
-impl Generator for UniformGenerator {
+impl Generator<u64> for UniformGenerator {
     fn next(&self) -> u64 {
         let val = rand::thread_rng().gen_range(self.min, self.max);
         self.last_value.store(val, Ordering::Release);

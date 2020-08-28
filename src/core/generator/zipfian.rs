@@ -6,12 +6,13 @@ use super::Generator;
 
 const DEFAULT_ZIPFIAN_EXPONENT: f64 = 0.99;
 
-struct ZipfianGenerator {
+pub struct ZipfianGenerator {
     min: u64,
     max: u64,
     exponent: f64,
     zipf: Option<ZipfDistribution>,
     last_value: AtomicU64,
+    scramble: bool,
 }
 
 impl ZipfianGenerator {
@@ -22,6 +23,7 @@ impl ZipfianGenerator {
             exponent: DEFAULT_ZIPFIAN_EXPONENT,
             zipf: None,
             last_value: AtomicU64::new(0),
+            scramble: false,
         }
     }
 
@@ -41,12 +43,17 @@ impl ZipfianGenerator {
         self.exponent = exponent;
         self
     }
+
+    pub fn scramble(mut self, scramble: bool) -> Self {
+        self.scramble = scramble;
+        self
+    }
 }
 
-impl Generator for ZipfianGenerator {
+impl Generator<u64> for ZipfianGenerator {
     fn next(&self) -> u64 {
         let mut rng = rand::thread_rng();
-        let val = self
+        let mut val = self
             .zipf
             .unwrap_or_else(|| {
                 ZipfDistribution::new((self.max - self.min) as usize, self.exponent).unwrap()
@@ -54,10 +61,17 @@ impl Generator for ZipfianGenerator {
             .sample(&mut rng) as u64
             + self.min;
         self.last_value.store(val, Ordering::Release);
+        if self.scramble {
+            val = self.min + fxhash::hash64(&val) % (self.max - self.min + 1)
+        }
         val
     }
 
     fn last(&self) -> u64 {
-        self.last_value.load(Ordering::Acquire)
+        let mut val = self.last_value.load(Ordering::Acquire);
+        if self.scramble {
+            val = self.min + fxhash::hash64(&val) % (self.max - self.min + 1)
+        }
+        val
     }
 }
